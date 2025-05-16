@@ -4,6 +4,9 @@ const todoForm = document.getElementById('todo-form');
 const todoInput = document.getElementById('todo-input');
 const timerInput = document.getElementById('timer-input');
 const todoList = document.getElementById('todo-list');
+const gameStatus = document.getElementById('game-status');
+const resetBtn = document.getElementById('resetBtn');
+const confettiCanvas = document.getElementById('confetti-canvas');
 
 function formatTime(seconds) {
   const m = Math.floor(seconds / 60);
@@ -13,6 +16,7 @@ function formatTime(seconds) {
 
 function renderTasks() {
   todoList.innerHTML = '';
+  let allDone = tasks.length > 0 && tasks.every(t => t.completed);
   tasks.forEach((task, idx) => {
     const li = document.createElement('li');
     li.className = '';
@@ -22,7 +26,7 @@ function renderTasks() {
     if (task.editing) {
       li.innerHTML = `
         <input type="text" class="edit-input" value="${task.text}" />
-        <input type="number" class="edit-timer-input" min="0" step="1" value="${task.timer ? Math.ceil(task.timer / 60) : 0}" placeholder="Timer (minutes)" />
+        <input type="number" class="edit-timer-input" min="0" step="1" value="${task.timer ? Math.ceil(task.timer / 60) : 0}" placeholder="Timer (min)" />
         <div class="task-actions">
           <button class="save-btn">Save</button>
           <button class="cancel-btn">Cancel</button>
@@ -63,45 +67,33 @@ function renderTasks() {
           ${task.timer ? `<button class="reset-btn">Reset</button>` : ''}
         </div>
       `;
-
-      // Checkbox toggle
       li.querySelector('.checkbox').onchange = () => {
         tasks[idx].completed = !tasks[idx].completed;
         renderTasks();
+        checkGameWin();
       };
-
-      // Start/Pause timer
       if (task.timer) {
         const startBtn = li.querySelector('.start-btn');
         const pauseBtn = li.querySelector('.pause-btn');
         const resetBtn = li.querySelector('.reset-btn');
-
-        if (startBtn) {
-          startBtn.onclick = () => startTimer(idx);
-        }
-        if (pauseBtn) {
-          pauseBtn.onclick = () => pauseTimer(idx);
-        }
-        if (resetBtn) {
-          resetBtn.onclick = () => resetTimer(idx);
-        }
+        if (startBtn) startBtn.onclick = () => startTimer(idx);
+        if (pauseBtn) pauseBtn.onclick = () => pauseTimer(idx);
+        if (resetBtn) resetBtn.onclick = () => resetTimer(idx);
       }
-
-      // Edit task
       li.querySelector('.edit-btn').onclick = () => {
         tasks[idx].editing = true;
         renderTasks();
       };
-
-      // Delete task
       li.querySelector('.delete-btn').onclick = () => {
         clearInterval(tasks[idx].intervalId);
         tasks.splice(idx, 1);
         renderTasks();
+        checkGameWin();
       };
     }
     todoList.appendChild(li);
   });
+  checkGameWin();
 }
 
 function startTimer(idx) {
@@ -160,6 +152,72 @@ todoForm.onsubmit = function (e) {
     timerInput.value = '';
     renderTasks();
   }
+};
+
+resetBtn.onclick = function() {
+  tasks.forEach(task => clearInterval(task.intervalId));
+  tasks = [];
+  renderTasks();
+  hideConfetti();
+  gameStatus.textContent = "";
+};
+
+function checkGameWin() {
+  if (tasks.length > 0 && tasks.every(t => t.completed)) {
+    gameStatus.textContent = "🎉 All tasks completed! You win!";
+    showConfetti();
+  } else {
+    gameStatus.textContent = "";
+    hideConfetti();
+  }
+}
+
+// --- Confetti Animation ---
+function showConfetti() {
+  confettiCanvas.style.display = "block";
+  let ctx = confettiCanvas.getContext("2d");
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
+  let confetti = [];
+  for (let i = 0; i < 80; i++) {
+    confetti.push({
+      x: Math.random() * confettiCanvas.width,
+      y: Math.random() * confettiCanvas.height * -1,
+      r: Math.random() * 8 + 4,
+      d: Math.random() * 80 + 20,
+      color: ["#f08c7d", "#3bb273", "#f5a623", "#38414b"][Math.floor(Math.random()*4)],
+      tilt: Math.floor(Math.random() * 10) - 10
+    });
+  }
+  let angle = 0;
+  function drawConfetti() {
+    ctx.clearRect(0, 0, confettiCanvas.width, confettiCanvas.height);
+    angle += 0.01;
+    for (let i = 0; i < confetti.length; i++) {
+      let c = confetti[i];
+      ctx.beginPath();
+      ctx.arc(c.x, c.y, c.r, 0, 2 * Math.PI, false);
+      ctx.fillStyle = c.color;
+      ctx.fill();
+      c.y += Math.cos(angle + c.d) + 2 + c.r / 2;
+      c.x += Math.sin(angle) * 2;
+      if (c.y > confettiCanvas.height) {
+        c.x = Math.random() * confettiCanvas.width;
+        c.y = -10;
+      }
+    }
+    if (confettiCanvas.style.display === "block") {
+      requestAnimationFrame(drawConfetti);
+    }
+  }
+  drawConfetti();
+}
+function hideConfetti() {
+  confettiCanvas.style.display = "none";
+}
+window.onresize = function() {
+  confettiCanvas.width = window.innerWidth;
+  confettiCanvas.height = window.innerHeight;
 };
 
 renderTasks();
