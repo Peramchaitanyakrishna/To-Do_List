@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>To-Do List with Timer</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="todo-app">
+    <h1>My To-Do List with Timer</h1>
+    <form id="todo-form">
+      <input type="text" id="todo-input" placeholder="Add a new task..." required />
+      <input type="number" id="timer-input" placeholder="Timer (minutes)" min="0" step="1" />
+      <button type="submit">Add Task</button>
+    </form>
+    <ul id="todo-list"></ul>
+  </div>
+  <script src="script.js"></script>
+</body>
+</html>
